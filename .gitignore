@@ -1,0 +1,6 @@
+.gradle/
+build/
+run/
+.inkstone/
+node_modules/
+dist/

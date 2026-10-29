@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('companion-mod/**/*.gradle', 'companion-mod/**/gradle.properties', 'companion-mod/**/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Check version
+        if: github.event_name == 'push'
+        run: |
+          version=$(node -p "require('./package.json').version")
+          [ "${{ github.ref_name }}" = "v$version" ] || { echo "tag ${{ github.ref_name }} != v$version" >&2; exit 1; }
+
+      - name: Build companion mod jars
+        working-directory: companion-mod
+        run: |
+          ./gradlew.bat build -q --no-daemon
+          (cd mc26 && ./gradlew.bat build -q --no-daemon)
+          ls build/libs/inkstone-companion-*.jar mc26/build/libs/inkstone-companion-mc26-*.jar
+
+      - name: Pack plugin
+        run: |
+          mkdir -p dist/inkstone-minecraft
+          cp -r package.json LICENSE mcp src skills templates dist/inkstone-minecraft/
+          mkdir -p dist/inkstone-minecraft/companion-mod
+          (cd companion-mod && find . -path '*/.gradle' -prune -o -path '*/run' -prune -o -path '*/build' -prune -o -type f -print) | while read -r f; do mkdir -p "dist/inkstone-minecraft/companion-mod/$(dirname "$f")"; cp "companion-mod/$f" "dist/inkstone-minecraft/companion-mod/$f"; done
+          mkdir -p dist/inkstone-minecraft/companion-mod/build/libs dist/inkstone-minecraft/companion-mod/mc26/build/libs
+          cp companion-mod/build/libs/*.jar dist/inkstone-minecraft/companion-mod/build/libs/
+          cp companion-mod/mc26/build/libs/*.jar dist/inkstone-minecraft/companion-mod/mc26/build/libs/
+          (cd dist/inkstone-minecraft && tar -a -c -f ../inkstone-minecraft-plugin.zip *)
+          ls -la dist
+
+      - name: Publish release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" dist/inkstone-minecraft-plugin.zip --title "${{ github.ref_name }}" --generate-notes
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: inkstone-minecraft-plugin
+          path: dist/inkstone-minecraft-plugin.zip
