@@ -8,6 +8,7 @@ export interface ToolContent {
 export interface ToolResult {
   content: ToolContent[]
   isError?: boolean
+  structuredContent?: Record<string, unknown>
 }
 
 export interface ToolDefinition {

@@ -2,8 +2,11 @@ import { join } from 'node:path'
 import { dataDir, loadDevSettings } from '../src/core/dev/settings.ts'
 import { serveStdio } from './protocol.ts'
 import { createToolsWithExtras, McpContext } from './tools.ts'
+import { createSceneTools } from './scene/tools.mjs'
+import pkg from '../package.json' with { type: 'json' }
 
 const INSTRUCTIONS = [
+  'scene_* 可以独立于 Minecraft 创建、检查、修改 3D 构件；scene_query_structure 按规则定位异常；仅预览和 .blend 导出需要 Blender（PATH 或 SCENE3D_BLENDER）。',
   'Inkstone Minecraft 开发工具：给 Fabric mod 开发用，开发客户端由 mc_run 启动并常驻。',
   '常规循环：改代码或资源 → mc_apply（热替换 / 资源重载 / 数据 /reload，必要时报告需要重启）→ mc_view 或 mc_command 验证 → 出错看 mc_logs。',
   '套路是「搭现场用命令，触发用输入与界面，再用查询和截图断言」：环境用 mc_command 或 mc_run 的 gamemode/difficulty/lang/time/weather 参数摆好，交互用 mc_input / mc_ui 真实按键点击，结果用 mc_inspect（含 what=player）、mc_chat、mc_perf、mc_view 连拍确认。要数坐标的界面截图加 grid（网格与刻度，和 mc_ui click 同一坐标系），盯目标用 mc_highlight，等条件用 mc_wait 而不是反复截图轮询。',
@@ -20,4 +23,4 @@ const context = new McpContext({
   maxMemoryMb: settings.maxMemoryMb,
   log: (line) => process.stderr.write(`${line}\n`)
 })
-serveStdio(await createToolsWithExtras(context), { name: 'inkstone-minecraft', version: '0.1.1', instructions: INSTRUCTIONS })
+serveStdio([...await createToolsWithExtras(context), ...createSceneTools(join(root, 'scene3d-output'))], { name: 'inkstone-minecraft', version: pkg.version, instructions: INSTRUCTIONS })
