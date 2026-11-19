@@ -1,6 +1,6 @@
 {
   "name": "inkstone-minecraft",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Inkstone Minecraft：砚插件，让 agent 开发 Minecraft Fabric mod（MCP 工具、技能、伴随 mod 与开发核心）",
   "author": "Yu-DaTouX",
   "license": "MIT",
