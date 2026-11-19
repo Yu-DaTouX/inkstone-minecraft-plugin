@@ -63,7 +63,8 @@ jobs:
           mkdir -p dist/inkstone-minecraft/companion-mod/build/libs dist/inkstone-minecraft/companion-mod/mc26/build/libs
           cp companion-mod/build/libs/*.jar dist/inkstone-minecraft/companion-mod/build/libs/
           cp companion-mod/mc26/build/libs/*.jar dist/inkstone-minecraft/companion-mod/mc26/build/libs/
-          (cd dist/inkstone-minecraft && tar -a -c -f ../inkstone-minecraft-plugin.zip *)
+          (cd dist/inkstone-minecraft && python -m zipfile -c ../inkstone-minecraft-plugin.zip *)
+          python -m zipfile -t dist/inkstone-minecraft-plugin.zip
           ls -la dist
 
       - name: Publish release
